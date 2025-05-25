@@ -84,6 +84,19 @@
   .removeBtn:hover {
     background-color: #a71d2a;
   }
+  /* Neuer Button Style */
+  #toNotAppBtn {
+    margin-top: 1.5rem;
+    background: #28a745;
+    color: white;
+    border: none;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: background-color 0.3s ease;
+  }
+  #toNotAppBtn:hover {
+    background-color: #218838;
+  }
   @media (max-width: 360px) {
     .app-container {
       padding: 1.5rem 1rem;
@@ -119,6 +132,8 @@
 
   <p id="status">Status: Nicht verbunden</p>
   <p id="batteryStatus">Akku: Nicht verfügbar</p>
+
+  <button id="toNotAppBtn">Zur Not-App wechseln</button>
 </div>
 
 <script>
@@ -174,10 +189,8 @@
       maxAlarmsReached: "Максимум 12 раз.",
       removeBtnText: "Удалить"
     }
-    // Ergänze weitere Sprachen hier analog...
   };
 
-  // --- Lade URL-Parameter ---
   const params = new URLSearchParams(window.location.search);
   const lang = params.get('lang') || 'de';
   const name = params.get('name') || '';
@@ -186,7 +199,6 @@
 
   const t = translations[lang] || translations['de'];
 
-  // UI-Elemente
   const title = document.getElementById('title');
   const greeting = document.getElementById('greeting');
   const ageDisplay = document.getElementById('ageDisplay');
@@ -200,7 +212,6 @@
   const alarmLabel = document.getElementById('alarmLabel');
   const saveBtn = document.getElementById('saveBtn');
 
-  // Setze Texte übersetzt
   title.textContent = t.title;
   greeting.textContent = t.greeting + name;
   alarmLabel.textContent = t.alarmLabel;
@@ -208,7 +219,6 @@
   connectBtn.textContent = t.connectBtn;
   status.textContent = t.statusNotConnected;
 
-  // Berechne Alter aus Geburtsdatum
   function calculateAge(birth) {
     if (!birth) return "";
     const birthDateObj = new Date(birth);
@@ -224,7 +234,6 @@
   ageDisplay.textContent = age ? t.ageText + age + " Jahre" : "";
   weightDisplay.textContent = weight ? t.weightText + weight + " kg" : "";
 
-  // Bluetooth
   let bluetoothDevice = null;
   let batteryLevel = null;
 
@@ -236,7 +245,6 @@
       });
       status.textContent = t.statusConnected + bluetoothDevice.name;
 
-      // Batterie auslesen
       const server = await bluetoothDevice.gatt.connect();
       const service = await server.getPrimaryService('battery_service');
       const characteristic = await service.getCharacteristic('battery_level');
@@ -256,7 +264,6 @@
     }
   });
 
-  // Alarmzeiten verwalten
   let alarmTimes = [];
 
   function updateAlarmsList() {
@@ -295,16 +302,19 @@
     alarmTimeInput.value = '';
   });
 
-  // Piep alle Minute prüfen
   setInterval(() => {
     if (!alarmTimes.length) return;
     const now = new Date();
     const currentTime = now.toTimeString().slice(0,5);
     if (alarmTimes.includes(currentTime)) {
       alert(t.beepMsg + currentTime);
-      // Bluetooth-Signal senden (hier Platzhalter)
     }
   }, 60000);
+
+  // Button zur Not-App weiterleiten
+  document.getElementById('toNotAppBtn').addEventListener('click', () => {
+    window.location.href = 'notapp.html';
+  });
 </script>
 
 </body>
