@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Professionelle Notiz-App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* Reset & Basis */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f6f8;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 30px 15px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      -webkit-tap-highlight-color: transparent; /* Kein Highlight beim Touch auf iOS */
+      touch-action: manipulation; /* Optimiert Touch auf Buttons/Interaktionen */
+    }
+    .container {
+      width: 100%;
+      max-width: 700px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      padding: 30px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      max-height: 90vh; /* max Höhe begrenzt */
+      overflow: hidden;
+    }
+    h1 {
+      margin: 0;
+      font-weight: 700;
+      font-size: 2.4rem;
+      color: #5c2a9d;
+      text-align: center;
+      letter-spacing: 1.1px;
+    }
+
+    /* Dark Mode Styles */
+    body.dark {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+    body.dark .container {
+      background-color: #1e1e1e;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+    }
+    body.dark h1 {
+      color: #bb86fc;
+    }
+
+    /* Dark mode toggle */
+    .toggle-container {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .toggle-label {
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #5c2a9d;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: color 0.3s ease;
+    }
+    body.dark .toggle-label {
+      color: #bb86fc;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+      background: #ccc;
+      border-radius: 12px;
+      transition: background 0.3s ease;
+      flex-shrink: 0;
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+    input[type="checkbox"]:checked + .toggle-switch {
+      background: #5c2a9d;
+    }
+    input[type="checkbox"]:checked + .toggle-switch::after {
+      transform: translateX(26px);
+    }
+    input[type="checkbox"] {
+      display: none;
+    }
+
+    /* Notiz Eingabe */
+    #newNote {
+      width: 100%;
+      min-height: 120px;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 2px solid #d0c9e4;
+      font-size: 1.1rem;
+      resize: vertical;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.3s ease;
+      -webkit-overflow-scrolling: touch; /* Smooth Scroll auf iOS */
+    }
+    #newNote:focus {
+      outline: none;
+      border-color: #5c2a9d;
+      box-shadow: 0 0 8px rgba(92,42,157,0.5);
+    }
+
+    /* Button */
+    #addNoteBtn {
+      background: #5c2a9d;
+      border: none;
+      color: white;
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding: 14px 0;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(92,42,157,0.4);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      min-height: 44px; /* Mindestens 44px hoch für Touch */
+    }
+    #addNoteBtn:hover,
+    #addNoteBtn:focus {
+      background: #462377;
+      box-shadow: 0 8px 25px rgba(70,35,119,0.6);
+      outline: none;
+    }
+    #addNoteBtn:disabled {
+      background: #a998c7;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Notizen-Liste */
+    #notesList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      -webkit-overflow-scrolling: touch; /* Smooth Scroll auf iOS */
+    }
+
+    /* Scrollbar */
+    #notesList::-webkit-scrollbar {
+      width: 8px;
+    }
+    #notesList::-webkit-scrollbar-track {
+      background: #f0eaff;
+      border-radius: 20px;
+    }
+    #notesList::-webkit-scrollbar-thumb {
+      background-color: #5c2a9d;
+      border-radius: 20px;
+    }
+    body.dark #notesList::-webkit-scrollbar-track {
+      background: #2c2c2c;
+    }
+    body.dark #notesList::-webkit-scrollbar-thumb {
+      background-color: #bb86fc;
+    }
+
+    /* Einzelne Notiz */
+    .note {
+      background: #f0eaff;
+      border-left: 6px solid #5c2a9d;
+      border-radius: 14px;
+      padding: 20px 25px 20px 22px;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(92,42,157,0.1);
+      font-size: 1.05rem;
+      color: #2c2c2c;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      word-break: break-word;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    body.dark .note {
+      background: #2c2a3d;
+      border-left-color: #bb86fc;
+      color: #ddd;
+      box-shadow: 0 4px 20px rgba(187,134,252,0.3);
+    }
+
+    /* Buttons in der Notiz */
+    .note-actions {
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .note button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 1.3rem;
+      line-height: 1;
+      border-radius: 8px;
+      padding: 10px; /* Größere Touch-Fläche */
+      transition: background-color 0.3s ease;
+      color: #5c2a9d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    body.dark .note button {
+      color: #bb86fc;
+    }
+    .note button:hover,
+    .note button:focus {
+      background-color: #5c2a9d22;
+      outline: none;
+    }
+    .deleteBtn {
+      color: #e74c3c;
+    }
+    .deleteBtn:hover,
+    .deleteBtn:focus {
+      background-color: #e74c3c22;
+      color: #b02a28;
+    }
+
+    /* Editierbares Textfeld in Notiz */
+    .note textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      resize: none;
+      font-family: inherit;
+      font-size: 1.05rem;
+      color: inherit;
+      padding-right: 10px;
+      min-height: 60px;
+      line-height: 1.4;
+      border-radius: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .note textarea:focus {
+      outline: 2px solid #5c2a9d;
+      background-color: #f9f6ff;
+      color: #3c1766;
+      box-shadow: 0 0 8px rgba(92,42,157,0.5);
+    }
+    body.dark .note textarea:focus {
+      background-color: #3c1766;
+      color: #f9f6ff;
+      outline-color: #bb86fc;
+      box-shadow: 0 0 8px rgba(187,134,252,0.7);
+    }
+
+    /* Leer-Status */
+    #emptyMessage {
+      text-align: center;
+      color: #888;
+      font-style: italic;
+      margin-top: 20px;
+      user-select: none;
+    }
+    body.dark #emptyMessage {
+      color: #aaa;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px 25px;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      #newNote {
+        min-height: 90px;
+        font-size: 1rem;
+      }
+      #addNoteBtn {
+        font-size: 1rem;
+        padding: 12px 0;
+      }
+      .note {
+        font-size: 0.95rem;
+        padding: 15px 18px 15px 18px;
+      }
+      .note-actions button {
+        font-size: 1.1rem;
+        padding: 8px; /* etwas mehr Touchfläche auf kleineren Bildschirmen */
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container" role="main" aria-label="Notiz-Anwendung">
+    <div class="toggle-container">
+      <label for="darkModeToggle" class="toggle-label" aria-live="polite">
+        Dunkelmodus
+        <input type="checkbox" id="darkModeToggle" aria-checked="false" aria-label="Dunkelmodus umschalten" />
+        <span class="toggle-switch"></span>
+      </label>
+    </div>
+    <h1>Notiz-App</h1>
+
+    <textarea id="newNote" aria-label="Neue Notiz eingeben" placeholder="Schreibe eine neue Notiz..."></textarea>
+    <button id="addNoteBtn" disabled>Notiz hinzufügen</button>
+
+    <ul id="notesList" aria-live="polite" aria-relevant="additions removals"></ul>
+    <p id="emptyMessage" aria-live="polite">Noch keine Notizen vorhanden.</p>
+  </div>
+
+  <script>
+    (() => {
+      const addNoteBtn = document.getElementById('addNoteBtn');
+      const newNoteInput = document.getElementById('newNote');
+      const notesList = document.getElementById('notesList');
+      const emptyMessage = document.getElementById('emptyMessage');
+      const darkModeToggle = document.getElementById('darkModeToggle');
+
+      // Notizen aus LocalStorage laden
+      let notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+      // Dark Mode aus LocalStorage oder Systemvorgabe
+      const savedDarkMode = localStorage.getItem('darkMode');
+      if (savedDarkMode === 'true' || (!savedDarkMode && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark');
+        darkModeToggle.checked = true;
+        darkModeToggle.setAttribute('aria-checked', 'true');
+      }
+
+      // Textarea aktivitätsprüfung für Button aktivieren
+      function checkInput() {
+        addNoteBtn.disabled = newNoteInput.value.trim().length === 0;
+      }
+
+      // Notizen rendern
+      function renderNotes() {
+        notesList.innerHTML = '';
+
+        if (notes.length === 0) {
+          emptyMessage.style.display = 'block';
+          return;
+        } else {
+          emptyMessage.style.display = 'none';
+        }
+
+        notes.forEach((note, index) => {
+          const li = document.createElement('li');
+          li.className = 'note';
+
+          // Textarea für Editierbarkeit
+          const textarea = document.createElement('textarea');
+          textarea.value = note;
+          textarea.rows = Math.min(8, Math.max(3, note.split('\n').length));
+          textarea.setAttribute('aria-label', `Notiz ${index + 1} bearbeiten`);
+          textarea.addEventListener('input', (e) => {
+            notes[index] = e.target.value;
+            saveNotes();
+            autoResizeTextarea(e.target);
+          });
+          textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+              e.preventDefault();
+              addNoteBtn.focus();
+            }
+          });
+          autoResizeTextarea(textarea);
+
+          // Button-Container
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'note-actions';
+
+          // Löschen Button (ohne Bestätigung)
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'deleteBtn';
+          deleteBtn.title = 'Notiz löschen';
+          deleteBtn.setAttribute('aria-label', `Notiz ${index + 1} löschen`);
+          deleteBtn.innerHTML = '🗑️';
+          deleteBtn.addEventListener('click', () => {
+            deleteNote(index);
+          });
+
+          actionsDiv.appendChild(deleteBtn);
+
+          li.appendChild(textarea);
+          li.appendChild(actionsDiv);
+          notesList.appendChild(li);
+        });
+      }
+
+      // Automatische Höhe für Textareas
+      function autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 2 + 'px';
+      }
+
+      // Speichern in LocalStorage
+      function saveNotes() {
+        localStorage.setItem('notes', JSON.stringify(notes));
+      }
+
+      // Notiz löschen
+      function deleteNote(index) {
+        notes.splice(index, 1);
+        saveNotes();
+        renderNotes();
+      }
+
+      // Neue Notiz hinzufügen
+      function addNote() {
+        const text = newNoteInput.value.trim();
+        if (text.length === 0) return;
+        notes.push(text);
+        saveNotes();
+        renderNotes();
+        newNoteInput.value = '';
+        checkInput();
+        newNoteInput.focus();
+      }
+
+      // Event-Listener
+      addNoteBtn.addEventListener('click', addNote);
+      newNoteInput.addEventListener('input', checkInput);
+
+      // Enter + Ctrl zum schnellen Hinzufügen (optional)
+      newNoteInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.ctrlKey) {
+          e.preventDefault();
+          if (!addNoteBtn.disabled) addNote();
+        }
+      });
+
+      // Dark Mode Umschaltung
+      darkModeToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          document.body.classList.add('dark');
+          localStorage.setItem('darkMode', 'true');
+          darkModeToggle.setAttribute('aria-checked', 'true');
+        } else {
+          document.body.classList.remove('dark');
+          localStorage.setItem('darkMode', 'false');
+          darkModeToggle.setAttribute('aria-checked', 'false');
+        }
+      });
+
+      // Initial rendern
+      checkInput();
+      renderNotes();
+    })();
+  </script>
+
+</body>
+</html>

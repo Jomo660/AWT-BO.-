@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Piep-Bottle</title>
+<style>
+  body {
+    margin: 0; font-family: Arial, sans-serif;
+    background-color: #b3d9ff;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+  .app-container {
+    background: white;
+    max-width: 400px;
+    width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    font-size: clamp(14px, 2vw, 18px);
+  }
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    margin-bottom: 1rem;
+  }
+  p {
+    margin: 0.3rem 0;
+  }
+  button, input[type="time"] {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-top: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+  label {
+    display: block;
+    text-align: left;
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+  #batteryStatus {
+    margin-top: 1.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  #alarmsList {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+  }
+  #alarmsList li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #eee;
+  }
+  #alarmsList li:last-child {
+    border-bottom: none;
+  }
+  .removeBtn {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .removeBtn:hover {
+    background-color: #a71d2a;
+  }
+  /* Neuer Button Style */
+  #toNotAppBtn {
+    margin-top: 1.5rem;
+    background: #28a745;
+    color: white;
+    border: none;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: background-color 0.3s ease;
+  }
+  #toNotAppBtn:hover {
+    background-color: #218838;
+  }
+  @media (max-width: 360px) {
+    .app-container {
+      padding: 1.5rem 1rem;
+    }
+    button, input[type="time"] {
+      font-size: 0.9rem;
+      padding: 0.6rem;
+    }
+    h1 {
+      font-size: 1.6rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <h1 id="title">Piep-Bottle</h1>
+
+  <p id="greeting"></p>
+  <p id="ageDisplay"></p>
+  <p id="weightDisplay"></p>
+
+  <button id="connectBtn">🔗 Bluetooth verbinden</button>
+
+  <form id="alarmForm">
+    <label for="alarmTime" id="alarmLabel">⏰ Piep-Zeit einstellen:</label>
+    <input type="time" id="alarmTime" required />
+    <button type="submit" id="saveBtn">Speichern</button>
+  </form>
+
+  <ul id="alarmsList" aria-label="Alarmzeiten Liste"></ul>
+
+  <p id="status">Status: Nicht verbunden</p>
+  <p id="batteryStatus">Akku: Nicht verfügbar</p>
+
+  <button id="toNotAppBtn">Zur Not-App wechseln</button>
+</div>
+
+<script>
+  const translations = {
+    de: {
+      title: "Piep-Bottle",
+      greeting: "Hallo, ",
+      ageText: "Alter: ",
+      weightText: "Gewicht: ",
+      connectBtn: "🔗 Bluetooth verbinden",
+      alarmLabel: "⏰ Piep-Zeit einstellen:",
+      saveBtn: "Speichern",
+      statusNotConnected: "Status: Nicht verbunden",
+      statusConnected: "Status: Verbunden mit ",
+      batteryText: "Akku: ",
+      batteryUnavailable: "Akku: Nicht verfügbar",
+      alarmSaved: "Piep-Zeit gespeichert: ",
+      beepMsg: "⏰ Piep! Zeit ist ",
+      maxAlarmsReached: "Maximal 12 Zeiten erlaubt.",
+      removeBtnText: "Löschen"
+    },
+    en: {
+      title: "Piep-Bottle",
+      greeting: "Hello, ",
+      ageText: "Age: ",
+      weightText: "Weight: ",
+      connectBtn: "🔗 Connect Bluetooth",
+      alarmLabel: "⏰ Set alarm time:",
+      saveBtn: "Save",
+      statusNotConnected: "Status: Not connected",
+      statusConnected: "Status: Connected to ",
+      batteryText: "Battery: ",
+      batteryUnavailable: "Battery: Not available",
+      alarmSaved: "Alarm time saved: ",
+      beepMsg: "⏰ Beep! Time is ",
+      maxAlarmsReached: "Maximum 12 times allowed.",
+      removeBtnText: "Remove"
+    },
+    ru: {
+      title: "Piep-Bottle",
+      greeting: "Здравствуйте, ",
+      ageText: "Возраст: ",
+      weightText: "Вес: ",
+      connectBtn: "🔗 Подключить Bluetooth",
+      alarmLabel: "⏰ Установить время сигнала:",
+      saveBtn: "Сохранить",
+      statusNotConnected: "Статус: Не подключено",
+      statusConnected: "Статус: Подключено к ",
+      batteryText: "Батарея: ",
+      batteryUnavailable: "Батарея: Недоступна",
+      alarmSaved: "Время сигнала сохранено: ",
+      beepMsg: "⏰ Сигнал! Время ",
+      maxAlarmsReached: "Максимум 12 раз.",
+      removeBtnText: "Удалить"
+    }
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const lang = params.get('lang') || 'de';
+  const name = params.get('name') || '';
+  const birthdate = params.get('birthdate') || '';
+  const weight = params.get('weight') || '';
+
+  const t = translations[lang] || translations['de'];
+
+  const title = document.getElementById('title');
+  const greeting = document.getElementById('greeting');
+  const ageDisplay = document.getElementById('ageDisplay');
+  const weightDisplay = document.getElementById('weightDisplay');
+  const connectBtn = document.getElementById('connectBtn');
+  const status = document.getElementById('status');
+  const batteryStatus = document.getElementById('batteryStatus');
+  const alarmForm = document.getElementById('alarmForm');
+  const alarmTimeInput = document.getElementById('alarmTime');
+  const alarmsList = document.getElementById('alarmsList');
+  const alarmLabel = document.getElementById('alarmLabel');
+  const saveBtn = document.getElementById('saveBtn');
+
+  title.textContent = t.title;
+  greeting.textContent = t.greeting + name;
+  alarmLabel.textContent = t.alarmLabel;
+  saveBtn.textContent = t.saveBtn;
+  connectBtn.textContent = t.connectBtn;
+  status.textContent = t.statusNotConnected;
+
+  function calculateAge(birth) {
+    if (!birth) return "";
+    const birthDateObj = new Date(birth);
+    const now = new Date();
+    let age = now.getFullYear() - birthDateObj.getFullYear();
+    const m = now.getMonth() - birthDateObj.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birthDateObj.getDate())) {
+      age--;
+    }
+    return age;
+  }
+  const age = calculateAge(birthdate);
+  ageDisplay.textContent = age ? t.ageText + age + " Jahre" : "";
+  weightDisplay.textContent = weight ? t.weightText + weight + " kg" : "";
+
+  let bluetoothDevice = null;
+  let batteryLevel = null;
+
+  connectBtn.addEventListener('click', async () => {
+    try {
+      bluetoothDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['battery_service']
+      });
+      status.textContent = t.statusConnected + bluetoothDevice.name;
+
+      const server = await bluetoothDevice.gatt.connect();
+      const service = await server.getPrimaryService('battery_service');
+      const characteristic = await service.getCharacteristic('battery_level');
+      const value = await characteristic.readValue();
+      batteryLevel = value.getUint8(0);
+      batteryStatus.textContent = t.batteryText + batteryLevel + "%";
+
+      bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+        status.textContent = t.statusNotConnected;
+        batteryStatus.textContent = t.batteryUnavailable;
+      });
+    } catch (error) {
+      status.textContent = t.statusNotConnected;
+      batteryStatus.textContent = t.batteryUnavailable;
+      console.error('Bluetooth Fehler:', error);
+      alert(error.message || error);
+    }
+  });
+
+  let alarmTimes = [];
+
+  function updateAlarmsList() {
+    alarmsList.innerHTML = '';
+    alarmTimes.forEach((time, i) => {
+      const li = document.createElement('li');
+      li.textContent = time;
+      const btn = document.createElement('button');
+      btn.textContent = t.removeBtnText;
+      btn.className = 'removeBtn';
+      btn.addEventListener('click', () => {
+        alarmTimes.splice(i, 1);
+        updateAlarmsList();
+      });
+      li.appendChild(btn);
+      alarmsList.appendChild(li);
+    });
+  }
+
+  alarmForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const newTime = alarmTimeInput.value;
+    if (!newTime) return;
+
+    if (alarmTimes.length >= 12) {
+      alert(t.maxAlarmsReached);
+      return;
+    }
+    if (alarmTimes.includes(newTime)) {
+      alert("Zeit bereits gesetzt.");
+      return;
+    }
+    alarmTimes.push(newTime);
+    updateAlarmsList();
+    alert(t.alarmSaved + newTime);
+    alarmTimeInput.value = '';
+  });
+
+  setInterval(() => {
+    if (!alarmTimes.length) return;
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0,5);
+    if (alarmTimes.includes(currentTime)) {
+      alert(t.beepMsg + currentTime);
+    }
+  }, 60000);
+
+  // Button zur Not-App weiterleiten
+  document.getElementById('toNotAppBtn').addEventListener('click', () => {
+    window.location.href = 'notapp.html';
+  });
+</script>
+
+</body>
+</html>
